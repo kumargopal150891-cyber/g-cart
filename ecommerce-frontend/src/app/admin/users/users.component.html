@@ -1,0 +1,150 @@
+<mat-card class="content-panel">
+  <mat-card-header class="panel-header">
+    <mat-card-title>Manage Users</mat-card-title>
+    <span class="spacer"></span>
+    <button mat-raised-button color="primary" *ngIf="isAdmin" (click)="openCreateModal()">
+      <mat-icon>person_add</mat-icon> Add User
+    </button>
+  </mat-card-header>
+
+  <mat-card-content>
+  <table mat-table [dataSource]="users" class="users-table mat-elevation-z2">
+    <!-- Image Column -->
+    <ng-container matColumnDef="image">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let user">
+        <img
+          [src]="user.image || defaultImage"
+          alt="Profile"
+          class="user-avatar"
+        />
+      </td>
+    </ng-container>
+
+    <!-- Name Column -->
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let user">{{ user.name }}</td>
+    </ng-container>
+
+    <!-- Email Column -->
+    <ng-container matColumnDef="email">
+      <th mat-header-cell *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let user">{{ user.email }}</td>
+    </ng-container>
+
+    <!-- Role Column -->
+    <ng-container matColumnDef="role">
+      <th mat-header-cell *matHeaderCellDef>Role</th>
+      <td mat-cell *matCellDef="let user">
+        <span class="role-badge" [ngClass]="user.role">{{ user.role }}</span>
+      </td>
+    </ng-container>
+
+    <!-- Status Column -->
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let user">
+        <span
+          class="status-badge"
+          [ngClass]="{ active: user.isActive, inactive: !user.isActive }"
+        >
+          {{ user.isActive ? "Active" : "Inactive" }}
+        </span>
+      </td>
+    </ng-container>
+
+    <!-- Actions Column -->
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let user" class="action-buttons">
+        <button mat-icon-button color="primary" (click)="openEditModal(user)">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button
+          mat-stroked-button
+          [ngClass]="user.isActive ? 'btn-warning' : 'btn-success'"
+          (click)="toggleStatus(user._id)"
+        >
+          {{ user.isActive ? "Deactivate" : "Activate" }}
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteUser(user._id)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+    <!-- Empty State -->
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell text-center" [attr.colspan]="displayedColumns.length">
+        No users found.
+      </td>
+    </tr>
+  </table>
+  </mat-card-content>
+</mat-card>
+
+<!-- User Form Modal -->
+<div class="modal-overlay" *ngIf="isModalOpen">
+  <mat-card class="modal-content">
+    <mat-card-header class="modal-header">
+      <mat-card-title>{{ isEditMode ? "Edit User" : "Add New User" }}</mat-card-title>
+      <span class="spacer"></span>
+      <button mat-icon-button class="close-btn" (click)="closeModal()"><mat-icon>close</mat-icon></button>
+    </mat-card-header>
+    <form (ngSubmit)="saveUser()">
+      <mat-card-content>
+        <div class="profile-image-upload">
+          <!-- Standard Preview and Upload Options -->
+          <div *ngIf="!isCameraOpen" class="preview-section">
+            <img [src]="imagePreview || defaultImage" alt="Preview" class="preview-img"/>
+            <div class="upload-actions">
+              <button type="button" mat-stroked-button (click)="fileInput.click()"><mat-icon>upload_file</mat-icon> Upload File</button>
+              <input #fileInput type="file" (change)="onImageSelected($event)" accept="image/*" style="display: none"/>
+              <button type="button" mat-flat-button color="primary" (click)="openCamera()"><mat-icon>camera_alt</mat-icon> Use Camera</button>
+            </div>
+          </div>
+
+          <!-- Live Camera Feed and Capture Actions -->
+          <div *ngIf="isCameraOpen" class="camera-section">
+            <video #videoElement class="camera-video"></video>
+            <canvas #canvasElement style="display: none"></canvas>
+            <div class="camera-actions">
+              <button type="button" mat-flat-button color="accent" (click)="capturePhoto()"><mat-icon>camera</mat-icon> Capture</button>
+              <button type="button" mat-stroked-button color="warn" (click)="closeCamera()">Cancel</button>
+            </div>
+          </div>
+        </div>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Name</mat-label>
+          <input matInput type="text" name="name" [(ngModel)]="formData.name" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" name="email" [(ngModel)]="formData.email" required [disabled]="isEditMode" />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width" *ngIf="!isEditMode">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" name="password" [(ngModel)]="formData.password" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Role</mat-label>
+          <mat-select name="role" [(ngModel)]="formData.role" required>
+            <mat-option value="buyer">Buyer</mat-option>
+            <mat-option value="co-admin">Co-Admin</mat-option>
+            <mat-option value="admin">Admin</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" type="submit" class="full-width">
+          {{ isEditMode ? "Update User" : "Create User" }}
+        </button>
+      </mat-card-actions>
+    </form>
+  </mat-card>
+</div>
