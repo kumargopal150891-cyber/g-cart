@@ -15,6 +15,7 @@ const {
 
 // Import Routes
 const userRoutes = require("./src/routes/user.routes");
+const categoryRoutes = require("./src/routes/category.routes");
 
 // Initialize App & DB
 const app = express();
@@ -36,6 +37,9 @@ app.use("/api/auth", authRouter);
 
 // User Management Routes
 app.use("/api/users", userRoutes);
+
+// Category Management Routes
+app.use("/api/categories", categoryRoutes);
 
 // 2. Admin Routes (Protected & Restricted to Admins)
 const adminRouter = express.Router();
